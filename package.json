@@ -2,6 +2,9 @@
   "name": "learn01",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "type": "module",
   "scripts": {
     "dev": "svelte-kit dev",
@@ -11,8 +14,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
     "@supabase/auth-helpers-sveltekit": "^0.5.0",
-    "svelte": "^4.0.0",
-    "@retroui/retroui": "^1.0.0"
+    "svelte": "^4.0.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-netlify": "^5.0.0",
