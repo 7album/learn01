@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "svelte-kit dev",
-    "build": "svelte-kit build",
+    "build": "vite build",
     "preview": "svelte-kit preview"
   },
   "dependencies": {
@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@sveltejs/adapter-netlify": "5.2.4",
-    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/kit": "^2.69.3",
     "@sveltejs/vite-plugin-svelte": "4.0.0",
     "autoprefixer": "10.4.14",
     "postcss": "8.4.24",
