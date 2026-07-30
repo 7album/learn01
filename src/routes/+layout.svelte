@@ -1,10 +1,6 @@
 <script lang="ts">
-  import { setContext } from 'svelte';
+  import '../app.css';
 </script>
-
-<svelte:head>
-  <link rel="stylesheet" href="/app.css">
-</svelte:head>
 
 <div class="min-h-screen">
   <slot />
