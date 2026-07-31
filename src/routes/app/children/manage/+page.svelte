@@ -204,9 +204,9 @@
                 </div>
               {:else}
                 <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
+                  <div class="flex items-center justify-between">
                     <h4 class="text-lg font-medium text-slate-950">{child.name}</h4>
-                    <p class="mt-1 text-sm text-slate-500">ID：{child.id}</p>
+                    <span class="ml-1 mt-1 text-[10px] text-slate-500">({child.id})</span>
                   </div>
 
                   <div class="flex flex-wrap gap-2">
