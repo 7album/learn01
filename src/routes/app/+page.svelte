@@ -1,8 +1,8 @@
 <script lang="ts">
   const items = [
-    { title: '第一次閱讀時段', type: '學習筆記', meta: '今天 · 語文' },
-    { title: '騎腳踏車里程碑', type: '里程碑', meta: '昨天 · 戶外活動' },
-    { title: '平靜收拾習慣', type: '行為', meta: '本週 · 居家技能' }
+    { title: '第一次閱讀時段', type: '學習筆記', meta: '2026-07-31 · 語文' },
+    { title: '騎腳踏車里程碑', type: '里程碑', meta: '2026-07-30 · 戶外活動' },
+    { title: '平靜收拾習慣', type: '行為', meta: '2026-07-28 · 居家技能' }
   ];
 </script>
 
@@ -20,11 +20,11 @@
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">本週</p>
-      <p class="mt-2 text-3xl font-semibold">5 entries</p>
+      <p class="mt-2 text-3xl font-semibold">5 筆</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">目前連續天數</p>
-      <p class="mt-2 text-3xl font-semibold">4 days</p>
+      <p class="mt-2 text-3xl font-semibold">4 天</p>
     </div>
   </div>
 

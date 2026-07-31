@@ -18,8 +18,8 @@
       <input bind:value={tags} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="閱讀, 數學, 平靜" />
     </label>
     <label class="block">
-      <span class="text-sm font-medium text-slate-700">記錄時間</span>
-      <input bind:value={notedAt} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" type="datetime-local" />
+      <span class="text-sm font-medium text-slate-700">記錄日期</span>
+      <input bind:value={notedAt} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" type="date" />
     </label>
     <button class="rounded-full bg-emerald-600 px-5 py-2.5 text-white">儲存筆記</button>
   </form>
