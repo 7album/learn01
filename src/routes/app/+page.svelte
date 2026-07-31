@@ -12,35 +12,28 @@
     loading = true;
     error = '';
 
-    const [{ data: milestones, error: milestoneError }, { data: notes, error: noteError }] = await Promise.all([
-      supabase.from('milestones').select('id,title,description,category,occurred_at,created_at,updated_at').order('occurred_at', { ascending: false }),
-      supabase.from('learning_notes').select('id,content,tags,noted_at,created_at').order('noted_at', { ascending: false })
-    ]);
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select('id,type,title,description,category,content,tags,event_date,created_at,updated_at')
+      .order('event_date', { ascending: false });
 
-    if (milestoneError || noteError) {
-      error = milestoneError?.message ?? noteError?.message ?? '載入資料失敗';
+    if (eventsError) {
+      error = eventsError.message ?? '載入資料失敗';
       loading = false;
       return;
     }
 
-    const combined = [
-      ...(milestones ?? []).map((item) => ({
-        ...item,
-        type: 'milestone' as const,
-        label: item.category || '里程碑',
-        title: item.title,
-        meta: `${formatDate(item.occurred_at)} · ${item.category || '里程碑'}`
-      })),
-      ...(notes ?? []).map((item) => ({
-        ...item,
-        type: 'learning_note' as const,
-        label: '學習筆記',
-        title: item.content || '未命名筆記',
-        meta: `${formatDate(item.noted_at)} · ${(item.tags ?? []).join('、') || '無標籤'}`
-      }))
-    ].sort((left, right) => {
-      const leftDate = new Date(left.occurred_at || left.noted_at || left.created_at || '').getTime();
-      const rightDate = new Date(right.occurred_at || right.noted_at || right.created_at || '').getTime();
+    const combined = (events ?? []).map((item) => ({
+      ...item,
+      label: item.type === 'milestone' ? item.category || '事件' : '事件',
+      title: item.type === 'milestone' ? item.title : item.content || '未命名筆記',
+      meta:
+        item.type === 'milestone'
+          ? `${formatDate(item.event_date)} · ${item.category || '事件'}`
+          : `${formatDate(item.event_date)} · ${(item.tags ?? []).join('、') || '無標籤'}`
+    })).sort((left, right) => {
+      const leftDate = new Date(left.event_date || left.created_at || '').getTime();
+      const rightDate = new Date(right.event_date || right.created_at || '').getTime();
       return rightDate - leftDate;
     });
 
@@ -52,8 +45,7 @@
     const confirmDelete = confirm('確定要刪除這筆資料嗎？');
     if (!confirmDelete) return;
 
-    const table = item.type === 'milestone' ? 'milestones' : 'learning_notes';
-    const { error: deleteError } = await supabase.from(table).delete().eq('id', item.id);
+    const { error: deleteError } = await supabase.from('events').delete().eq('id', item.id);
 
     if (deleteError) {
       error = deleteError.message;
@@ -93,10 +85,10 @@
   <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h3 class="text-xl font-semibold">最近活動</h3>
+        <h3 class="text-xl font-semibold">最近事件</h3>
         <p class="text-sm text-slate-500">登入後測試用的範例資料</p>
       </div>
-      <a class="rounded-full bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-500" href="/app/notes/new">新增筆記</a>
+      <a class="rounded-full bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-500" href="/app/events/new">新增事件</a>
     </div>
 
     {#if error}
@@ -106,7 +98,7 @@
     {#if loading}
       <p class="mt-6 text-sm text-slate-500">載入中…</p>
     {:else if items.length === 0}
-      <p class="mt-6 rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">尚無資料，先新增第一筆里程碑或筆記吧。</p>
+      <p class="mt-6 rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">尚無資料，先新增第一筆事件吧。</p>
     {:else}
       <div class="mt-6 space-y-3">
         {#each items as item}
@@ -117,7 +109,7 @@
               <p class="mt-1 text-sm text-slate-500">{item.meta}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-              <a class="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100" href={item.type === 'milestone' ? `/app/milestones/${item.id}/edit` : `/app/notes/${item.id}/edit`}>編輯</a>
+              <a class="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100" href={`/app/events/${item.id}/edit`}>編輯</a>
               <button class="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-700 hover:bg-rose-50" on:click={() => removeEntry(item)}>刪除</button>
             </div>
           </article>

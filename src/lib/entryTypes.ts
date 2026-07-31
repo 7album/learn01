@@ -8,8 +8,7 @@ export type EntryRecord = {
 	category?: string | null;
 	content?: string | null;
 	tags?: string[] | null;
-	occurred_at?: string | null;
-	noted_at?: string | null;
+	event_date?: string | null;
 	created_at?: string | null;
 	updated_at?: string | null;
 };

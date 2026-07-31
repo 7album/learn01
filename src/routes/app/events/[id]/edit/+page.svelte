@@ -8,9 +8,12 @@
   let loading = true;
   let saving = false;
   let error = '';
+  let title = '';
+  let description = '';
+  let category = '事件';
   let content = '';
   let tags = '';
-  let notedAt = '';
+  let eventDate = '';
 
   onMount(() => {
     void (async () => {
@@ -21,8 +24,8 @@
       }
 
       const { data, error: loadError } = await supabase
-        .from('learning_notes')
-        .select('id,content,tags,noted_at')
+        .from('events')
+        .select('id,title,description,category,content,tags,event_date,type')
         .eq('id', page.params.id)
         .single();
 
@@ -32,9 +35,12 @@
         return;
       }
 
+      title = data.title ?? '';
+      description = data.description ?? '';
+      category = data.category ?? '事件';
       content = data.content ?? '';
       tags = (data.tags ?? []).join(', ');
-      notedAt = toDateInputValue(data.noted_at);
+      eventDate = toDateInputValue(data.event_date);
       loading = false;
     })();
   });
@@ -55,11 +61,14 @@
       .filter(Boolean);
 
     const { error: updateError } = await supabase
-      .from('learning_notes')
+      .from('events')
       .update({
+        title,
+        description,
+        category,
         content,
         tags: tagList,
-        noted_at: notedAt || new Date().toISOString()
+        event_date: eventDate || new Date().toISOString().slice(0, 10)
       })
       .eq('id', page.params.id);
 
@@ -74,8 +83,8 @@
 </script>
 
 <section class="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-  <p class="text-sm uppercase tracking-[0.3em] text-slate-500">編輯筆記</p>
-  <h2 class="mt-2 text-2xl font-semibold">修改學習筆記</h2>
+  <p class="text-sm uppercase tracking-[0.3em] text-slate-500">編輯事件</p>
+  <h2 class="mt-2 text-2xl font-semibold">修改事件</h2>
 
   {#if error}
     <p class="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
@@ -86,6 +95,14 @@
   {:else}
     <form class="mt-6 space-y-4" on:submit|preventDefault={save}>
       <label class="block">
+        <span class="text-sm font-medium text-slate-700">標題</span>
+        <input bind:value={title} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" />
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">描述</span>
+        <textarea bind:value={description} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" rows="4"></textarea>
+      </label>
+      <label class="block">
         <span class="text-sm font-medium text-slate-700">內容</span>
         <textarea bind:value={content} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" rows="5"></textarea>
       </label>
@@ -93,12 +110,24 @@
         <span class="text-sm font-medium text-slate-700">標籤</span>
         <input bind:value={tags} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" />
       </label>
-      <label class="block">
-        <span class="text-sm font-medium text-slate-700">記錄日期</span>
-        <input bind:value={notedAt} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" type="date" />
-      </label>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">類別</span>
+          <select bind:value={category} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2">
+            <option>事件</option>
+            <option>學習</option>
+            <option>行為</option>
+            <option>閱讀</option>
+            <option>其他</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">發生日期</span>
+          <input bind:value={eventDate} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" type="date" />
+        </label>
+      </div>
       <div class="flex gap-3">
-        <button class="rounded-full bg-slate-900 px-5 py-2.5 text-white" type="submit" disabled={saving}>{saving ? '儲存中…' : '儲存變更'}</button>
+        <button class="rounded-full bg-slate-900 px-5 py-2.5 text-white" type="submit" disabled={saving}>{saving ? '儲存中…' : '儲存事件'}</button>
         <a class="rounded-full border border-slate-300 px-5 py-2.5 text-slate-700" href="/app">取消</a>
       </div>
     </form>

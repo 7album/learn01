@@ -46,8 +46,7 @@
         </div>
         <div class="flex items-center gap-3">
           <a class="rounded-full border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100" href="/app">儀表板</a>
-          <a class="rounded-full border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100" href="/app/milestones/new">新增里程碑</a>
-          <a class="rounded-full border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100" href="/app/notes/new">新增筆記</a>
+          <a class="rounded-full border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100" href="/app/events/new">新增事件</a>
           <button class="rounded-full bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700" on:click={signOut}>登出</button>
         </div>
       </div>
