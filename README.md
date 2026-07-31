@@ -1,45 +1,45 @@
-# Personal Growth App — Implementation Plan
+# 個人成長應用程式 — 實作規劃
 
 zhtw
 
-## Project Goal
+## 專案目標
 
-Build a fresh SvelteKit app for homeschooling families to record child milestones and free-form learning/behavioral notes, viewable as a timeline. Deploy to Netlify with Supabase as the backend.
+建立一個全新的 SvelteKit 應用，提供給在家教育家庭記錄孩子的里程碑與自由格式的學習／行為筆記，並以時間軸方式檢視。後端使用 Supabase，部署到 Netlify。
 
-## Tech Stack
+## 技術堆疊
 
-- **Framework:** SvelteKit (new project)
-- **Backend/Auth/DB:** Supabase (via CLI)
-- **Deployment:** Netlify (via CLI, SvelteKit Netlify adapter)
-- **Styling:** Tailwind CSS v4 
-- **UI:** https://github.com/retroui/RetroUI
+- **框架：** SvelteKit（新專案）
+- **後端／驗證／資料庫：** Supabase（透過 CLI）
+- **部署：** Netlify（透過 CLI，搭配 SvelteKit Netlify adapter）
+- **樣式：** Tailwind CSS v4
+- **UI：** https://github.com/retroui/RetroUI
 
-## Phase 1 — Project & Backend Setup
+## 階段 1 — 專案與後端設定
 
-1. Scaffold a new SvelteKit project with the Netlify adapter (`@sveltejs/adapter-netlify`).
-2. Enable Supabase integration for this new project.
-3. Configure environment variables:
+1. 建立一個新的 SvelteKit 專案，並使用 Netlify adapter（`@sveltejs/adapter-netlify`）。
+2. 為這個新專案啟用 Supabase 整合。
+3. 設定環境變數：
   - `PUBLIC_SUPABASE_URL`
-  - `PUBLIC_SUPABASE_ANON_KEY`
-4. Configure Supabase Auth providers:
-5. Magiclink
-6. Set up the database schema (see below).
+  - `PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+4. 設定 Supabase 驗證提供者：
+5. 電子郵件／密碼
+6. 建立資料庫結構（如下）。
 
-## Phase 2 — Database Schema
+## 階段 2 — 資料庫結構
 
 ### `milestones`
 
 
 | Column        | Type          | Notes                                                |
 | ------------- | ------------- | ---------------------------------------------------- |
-| `id`          | `uuid`        | primary key, default `gen_random_uuid()`             |
-| `user_id`     | `uuid`        | references `auth.users(id)` on delete cascade        |
-| `title`       | `text`        | not null                                             |
-| `description` | `text`        | optional details                                     |
-| `category`    | `text`        | e.g., "milestone", "learning", "behavior", "reading" |
-| `occurred_at` | `timestamptz` | defaults to now                                      |
-| `created_at`  | `timestamptz` | defaults to now                                      |
-| `updated_at`  | `timestamptz` | defaults to now                                      |
+| `id`          | `uuid`        | 主鍵，預設 `gen_random_uuid()`                       |
+| `user_id`     | `uuid`        | 參照 `auth.users(id)`，刪除時連動刪除                |
+| `title`       | `text`        | 不可為空                                             |
+| `description` | `text`        | 可選的詳細說明                                       |
+| `category`    | `text`        | 例如："里程碑"、"學習"、"行為"、"閱讀"        |
+| `occurred_at` | `timestamptz` | 預設為現在                                           |
+| `created_at`  | `timestamptz` | 預設為現在                                           |
+| `updated_at`  | `timestamptz` | 預設為現在                                           |
 
 
 ### `learning_notes`
@@ -47,91 +47,92 @@ Build a fresh SvelteKit app for homeschooling families to record child milestone
 
 | Column       | Type          | Notes                                         |
 | ------------ | ------------- | --------------------------------------------- |
-| `id`         | `uuid`        | primary key                                   |
-| `user_id`    | `uuid`        | references `auth.users(id)` on delete cascade |
-| `content`    | `text`        | free-form note                                |
-| `tags`       | `text[]`      | optional homeschool tags                      |
-| `noted_at`   | `timestamptz` | defaults to now                               |
-| `created_at` | `timestamptz` | defaults to now                               |
+| `id`         | `uuid`        | 主鍵                                             |
+| `user_id`    | `uuid`        | 參照 `auth.users(id)`，刪除時連動刪除           |
+| `content`    | `text`        | 自由格式筆記                                     |
+| `tags`       | `text[]`      | 可選的在家教育標籤                               |
+| `noted_at`   | `timestamptz` | 預設為現在                                       |
+| `created_at` | `timestamptz` | 預設為現在                                       |
 
 
-### Security
+### 安全性
 
-- Enable RLS on both tables.
-- Policies: authenticated users can CRUD only their own rows (`auth.uid() = user_id`).
-- Grant `SELECT, INSERT, UPDATE, DELETE` to `authenticated`.
-- Grant `ALL` to `service_role`.
+- 在兩個資料表上啟用 RLS。
+- 原則：已驗證使用者只能操作自己的資料列（`auth.uid() = user_id`）。
+- 對 `authenticated` 授予 `SELECT, INSERT, UPDATE, DELETE`。
+- 對 `service_role` 授予 `ALL`。
 
-## Phase 3 — Auth Flow
+## 階段 3 — 驗證流程
 
-1. Public routes: `/`,  `/login`.
-2. Protected layout: `(app)/` routes gated by Supabase session.
-3. Login page:
-  - "Send magic link" toggle/button
-  - Link to register
-4. Magic link page:
-  - Email input → calls `supabase.auth.signInWithOtp({ email })`
-5. Session handling:
-  - Use `@supabase/ssr` or SvelteKit hooks to manage session.
-  - Store session in cookies (secure, httpOnly).
-  - Redirect unauthenticated users from protected routes to `/login`.
+1. 公開路由：`/`、`/login`。
+2. 受保護的版型：`(app)/` 路由由 Supabase session 保護。
+3. 登入頁：
+  - 電子郵件／密碼表單
+  - 註冊切換／按鈕
+4. 登入頁：
+  - 電子郵件輸入與密碼輸入
+  - 呼叫 `supabase.auth.signInWithPassword({ email, password })`
+5. Session 處理：
+  - 使用 `@supabase/ssr` 或 SvelteKit hooks 管理 session。
+  - 將 session 儲存在 cookie 中（secure、httpOnly）。
+  - 將未登入使用者從受保護路由重新導向到 `/login`。
 
-## Phase 4 — Core Features
+## 階段 4 — 核心功能
 
-### 1. Dashboard / Timeline (`/app`)
+### 1. 儀表板／時間軸（`/app`）
 
-- GitHub style heatmap and streak
-- Chronological feed combining milestones and learning notes.
-- Filter by category or tag.
-- Group by month/year.
-- Empty state for new users.
+- GitHub 風格的熱圖與連續紀錄
+- 合併里程碑與學習筆記的時間序列動態流
+- 可依類別或標籤篩選
+- 依月份／年份分組
+- 新使用者的空狀態
 
-### 2. Add Milestone (`/app/milestones/new`)
+### 2. 新增里程碑（`/app/milestones/new`）
 
-- Form fields: title, description, category, occurred_at.
-- Category options: Milestone, Learning moment, Behavior, Reading, Other.
-- Save to `milestones` table.
-- Redirect back to timeline.
+- 表單欄位：標題、描述、類別、發生時間。
+- 類別選項：里程碑、學習時刻、行為、閱讀、其他。
+- 儲存到 `milestones` 資料表。
+- 完成後重新導向回時間軸。
 
-### 3. Add Learning Note (`/app/notes/new`)
+### 3. 新增學習筆記（`/app/notes/new`）
 
-- Form fields: content, tags (comma-separated), noted_at.
-- Save to `learning_notes` table.
-- Redirect back to timeline.
+- 表單欄位：內容、標籤（以逗號分隔）、記錄時間。
+- 儲存到 `learning_notes` 資料表。
+- 完成後重新導向回時間軸。
 
-### 4. Entry Detail / Edit
+### 4. 項目詳情／編輯
 
-- Click timeline item to view detail.
-- Edit and delete own entries.
+- 點擊時間軸項目查看詳情。
+- 編輯與刪除自己的項目。
 
-### 5. Social Profile (Future Development)
+### 5. 社交檔案（未來開發）
 
-## Phase 5 — UI & Design
+## 階段 5 — UI 與設計
 
-- Clean, calm, family-friendly aesthetic.
-- Mobile-first timeline layout.
-- Use semantic design tokens (no hardcoded colors).
-- Accessible forms with validation feedback.
+- 乾淨、安定、適合家庭的視覺風格。
+- 以行動裝置優先的時間軸版面。
+- 使用語意化設計 tokens（不要硬編色碼）。
+- 可存取的表單與驗證回饋。
 
-## Phase 6 — Deployment
+## 階段 6 — 部署
 
-1. Build with Netlify adapter.
-2. Add environment variables to Netlify dashboard.
-3. Configure redirect rules for SvelteKit SPA behavior.
-4. Deploy and verify auth + CRUD flows end-to-end.
+1. 使用 Netlify adapter 建置。
+2. 在 Netlify 控制台加入環境變數。
+3. 為 SvelteKit SPA 行為設定重新導向規則。
+4. 部署並端到端驗證驗證流程與 CRUD 流程。
 
-## Open Decisions / Questions
+## 開放決策／問題
 
-- Should milestones and learning notes be combined into one `entries` table with a `type` column for simplicity?
-- Yes, add a type column for classification, and further implement tag features for easy search, and, in future, badge mechanism
-- Do you want photo/media uploads in MVP, or keep it text-only for now?
-- Text only is preferred
-- Should the timeline support multiple children/profiles per account, or one account = one child for MVP?
-- Multiple profiles for family management
+- 是否要把 milestones 與 learning notes 合併成一個 `entries` 資料表，並用 `type` 欄位做分類以簡化設計？
+- 是，加入 type 欄位做分類，之後再進一步實作標籤搜尋功能，未來也可加入徽章機制。
+- MVP 要加入照片／媒體上傳，還是先維持純文字？
+- 先以純文字為主。
+- 時間軸要支援同一帳號下多個孩子／檔案，還是 MVP 先做一帳號對一孩子？
+- 支援多個檔案，方便家庭管理。
 
-## Deliverables
+## 交付內容
 
-- Working SvelteKit app on Netlify
-- Supabase backend with auth and tables
-- Login page
-- Protected app area with timeline, milestone form, and learning note form
+- 可在 Netlify 上運作的 SvelteKit 應用
+- 具備驗證與資料表的 Supabase 後端
+- 登入頁
+- 受保護的應用區域，包含時間軸、里程碑表單與學習筆記表單
