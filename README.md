@@ -4,7 +4,7 @@ zhtw
 
 ## 專案目標
 
-建立一個全新的 SvelteKit 應用，提供給在家教育家庭記錄孩子的里程碑與自由格式的學習／行為筆記，並以時間軸方式檢視。後端使用 Supabase，部署到 Netlify。
+建立一個全新的 SvelteKit 應用，提供給在家教育家庭記錄多個孩子的事件，並以時間軸方式檢視。後端使用 Supabase，部署到 Netlify。
 
 ## 技術堆疊
 
@@ -27,37 +27,37 @@ zhtw
 
 ## 階段 2 — 資料庫結構
 
-### `milestones`
+### `events`
 
 
 | Column        | Type          | Notes                                                |
 | ------------- | ------------- | ---------------------------------------------------- |
 | `id`          | `uuid`        | 主鍵，預設 `gen_random_uuid()`                       |
 | `user_id`     | `uuid`        | 參照 `auth.users(id)`，刪除時連動刪除                |
+| `child_id`    | `uuid`        | 參照 `children(id)`，刪除時連動刪除                  |
 | `title`       | `text`        | 不可為空                                             |
-| `description` | `text`        | 可選的詳細說明                                       |
-| `category`    | `text`        | 例如："里程碑"、"學習"、"行為"、"閱讀"        |
-| `occurred_at` | `timestamptz` | 預設為現在                                           |
+| `category`    | `text`        | 例如："事件"、"學習"、"行為"、"閱讀"         |
+| `content`     | `text`        | 自由內容                                             |
+| `tags`        | `text[]`      | 可選標籤                                             |
+| `event_date`  | `date`        | 預設為今天                                           |
 | `created_at`  | `timestamptz` | 預設為現在                                           |
 | `updated_at`  | `timestamptz` | 預設為現在                                           |
 
 
-### `learning_notes`
+### `children`
 
-
-| Column       | Type          | Notes                                         |
-| ------------ | ------------- | --------------------------------------------- |
-| `id`         | `uuid`        | 主鍵                                             |
-| `user_id`    | `uuid`        | 參照 `auth.users(id)`，刪除時連動刪除           |
-| `content`    | `text`        | 自由格式筆記                                     |
-| `tags`       | `text[]`      | 可選的在家教育標籤                               |
-| `noted_at`   | `timestamptz` | 預設為現在                                       |
-| `created_at` | `timestamptz` | 預設為現在                                       |
+| Column       | Type          | Notes                                                |
+| ------------ | ------------- | ---------------------------------------------------- |
+| `id`         | `uuid`        | 主鍵，預設 `gen_random_uuid()`                       |
+| `user_id`    | `uuid`        | 參照 `auth.users(id)`，刪除時連動刪除                |
+| `name`       | `text`        | 孩子名稱                                             |
+| `created_at` | `timestamptz` | 預設為現在                                           |
+| `updated_at` | `timestamptz` | 預設為現在                                           |
 
 
 ### 安全性
 
-- 在兩個資料表上啟用 RLS。
+- 在 `events` 資料表上啟用 RLS。
 - 原則：已驗證使用者只能操作自己的資料列（`auth.uid() = user_id`）。
 - 對 `authenticated` 授予 `SELECT, INSERT, UPDATE, DELETE`。
 - 對 `service_role` 授予 `ALL`。
@@ -86,13 +86,14 @@ zhtw
 - 可依類別或標籤篩選
 - 依月份／年份分組
 - 新使用者的空狀態
+- 支援切換孩子檔案與孩子 CRUD
 
-### 2. 新增里程碑（`/app/event/new`）
+### 2. 新增事件（`/app/events/new`）
 
-- 表單欄位：標題、描述、類別、發生時間。
-- 類別選項：里程碑、學習、行為、閱讀、其他。
-- 儲存到 `event` 資料表。
-- 完成後重新導向回時間軸。料表。
+- 表單欄位：標題、內容、標籤、類別、發生日期。
+- 表單欄位：孩子檔案 ID、標題、內容、標籤、類別、發生日期。
+- 類別選項：事件、學習、行為、閱讀、其他。
+- 儲存到 `events` 資料表。
 - 完成後重新導向回時間軸。
 
 ### 4. 項目詳情／編輯
@@ -130,4 +131,4 @@ zhtw
 - 可在 Netlify 上運作的 SvelteKit 應用
 - 具備驗證與資料表的 Supabase 後端
 - 登入頁
-- 受保護的應用區域，包含時間軸、里程碑表單與學習筆記表單
+- 受保護的應用區域，包含時間軸與事件表單

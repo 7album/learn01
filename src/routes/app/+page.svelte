@@ -6,7 +6,49 @@
 
   let loading = true;
   let error = '';
+  let childLoading = true;
+  let childError = '';
+  let selectedChild = '';
+  let childOptions: Array<{ id: string; name: string }> = [];
   let items: Array<EntryRecord & { label: string; meta: string }> = [];
+  $: trackedChildrenCount = childOptions.length;
+  $: selectedChildName = childOptions.find((child) => child.id === selectedChild)?.name || '尚未建立孩子檔案';
+  $: totalEventsCount = items.length;
+  $: milestoneCount = items.filter((item) => item.type === 'milestone').length;
+  $: noteCount = items.filter((item) => item.type !== 'milestone').length;
+  $: thisWeekCount = items.filter((item) => {
+    const eventDate = new Date(item.event_date || item.created_at || '');
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    startOfWeek.setDate(now.getDate() - diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return eventDate >= startOfWeek;
+  }).length;
+
+  async function loadChildren() {
+    childLoading = true;
+    childError = '';
+
+    const { data, error: loadError } = await supabase
+      .from('children')
+      .select('id,name')
+      .order('created_at', { ascending: true });
+
+    if (loadError) {
+      childError = loadError.message;
+      childLoading = false;
+      return;
+    }
+
+    childOptions = data ?? [];
+    if (!selectedChild || !childOptions.some((child) => child.id === selectedChild)) {
+      selectedChild = childOptions[0]?.id ?? '';
+    }
+
+    childLoading = false;
+  }
 
   async function loadEntries() {
     loading = true;
@@ -14,7 +56,7 @@
 
     const { data: events, error: eventsError } = await supabase
       .from('events')
-      .select('id,type,title,description,category,content,tags,event_date,created_at,updated_at')
+      .select('id,child_id,children(name),type,title,category,content,tags,event_date,created_at,updated_at')
       .order('event_date', { ascending: false });
 
     if (eventsError) {
@@ -23,13 +65,14 @@
       return;
     }
 
-    const combined = (events ?? []).map((item) => ({
+    const normalized = (events ?? []).map((item) => ({
       ...item,
+      child_name: item.children?.name || '未命名孩子',
       label: item.type === 'milestone' ? item.category || '事件' : '事件',
       title: item.type === 'milestone' ? item.title : item.content || '未命名筆記',
       meta:
         item.type === 'milestone'
-          ? `${formatDate(item.event_date)} · ${item.category || '事件'}`
+          ? `${formatDate(item.event_date)} · ${item.children?.name || '未命名孩子'} · ${item.category || '事件'}`
           : `${formatDate(item.event_date)} · ${(item.tags ?? []).join('、') || '無標籤'}`
     })).sort((left, right) => {
       const leftDate = new Date(left.event_date || left.created_at || '').getTime();
@@ -37,8 +80,17 @@
       return rightDate - leftDate;
     });
 
-    items = combined;
+    if (selectedChild && !childOptions.some((child) => child.id === selectedChild)) {
+      selectedChild = childOptions[0]?.id ?? '';
+    }
+
+    items = selectedChild ? normalized.filter((item) => item.child_id === selectedChild) : [];
     loading = false;
+  }
+
+  function setChild(childId: string) {
+    selectedChild = childId;
+    void loadEntries();
   }
 
   async function removeEntry(item: EntryRecord) {
@@ -56,29 +108,32 @@
   }
 
   onMount(() => {
+    void loadChildren();
     void loadEntries();
   });
 </script>
 
 <section class="space-y-8">
   <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 p-8 text-white shadow-xl">
-    <p class="text-sm uppercase tracking-[0.3em] text-white/60">儀表板</p>
-    <h2 class="mt-3 text-3xl font-semibold">用於登入後測試的簡易時間軸</h2>
-    <p class="mt-3 max-w-2xl text-white/75">使用這個受保護區域來確認驗證、導覽與新增資料流程，之後再串接正式的 Supabase 資料。</p>
+    <h2 class="text-3xl font-semibold">儀表板</h2>
   </div>
 
-  <div class="grid gap-4 md:grid-cols-3">
+  <div class="grid gap-4 md:grid-cols-4">
     <div class="rounded-2xl border border-slate-200 bg-white p-5">
       <p class="text-sm text-slate-500">追蹤中的孩子</p>
-      <p class="mt-2 text-3xl font-semibold">2</p>
+      <p class="mt-2 text-3xl font-semibold">{trackedChildrenCount}</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">本週</p>
-      <p class="mt-2 text-3xl font-semibold">5 筆</p>
+      <p class="text-sm text-slate-500">本週事件</p>
+      <p class="mt-2 text-3xl font-semibold">{thisWeekCount}</p>
     </div>
     <div class="rounded-2xl border border-slate-200 bg-white p-5">
-      <p class="text-sm text-slate-500">目前連續天數</p>
-      <p class="mt-2 text-3xl font-semibold">4 天</p>
+      <p class="text-sm text-slate-500">里程碑</p>
+      <p class="mt-2 text-3xl font-semibold">{milestoneCount}</p>
+    </div>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-sm text-slate-500">筆記</p>
+      <p class="mt-2 text-3xl font-semibold">{noteCount}</p>
     </div>
   </div>
 
@@ -88,7 +143,7 @@
         <h3 class="text-xl font-semibold">最近事件</h3>
         <p class="text-sm text-slate-500">登入後測試用的範例資料</p>
       </div>
-      <a class="rounded-full bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-500" href="/app/events/new">新增事件</a>
+      <a class="rounded-full bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-500" href={selectedChild === 'all' ? '/app/events/new' : `/app/events/new?child=${encodeURIComponent(selectedChild)}`}>新增事件</a>
     </div>
 
     {#if error}

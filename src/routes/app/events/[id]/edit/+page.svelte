@@ -8,8 +8,8 @@
   let loading = true;
   let saving = false;
   let error = '';
+  let childId = '';
   let title = '';
-  let description = '';
   let category = '事件';
   let content = '';
   let tags = '';
@@ -25,7 +25,7 @@
 
       const { data, error: loadError } = await supabase
         .from('events')
-        .select('id,title,description,category,content,tags,event_date,type')
+        .select('id,child_id,title,category,content,tags,event_date,type')
         .eq('id', page.params.id)
         .single();
 
@@ -35,8 +35,8 @@
         return;
       }
 
+      childId = data.child_id ?? '';
       title = data.title ?? '';
-      description = data.description ?? '';
       category = data.category ?? '事件';
       content = data.content ?? '';
       tags = (data.tags ?? []).join(', ');
@@ -63,8 +63,8 @@
     const { error: updateError } = await supabase
       .from('events')
       .update({
+        child_id: childId,
         title,
-        description,
         category,
         content,
         tags: tagList,
@@ -95,12 +95,12 @@
   {:else}
     <form class="mt-6 space-y-4" on:submit|preventDefault={save}>
       <label class="block">
-        <span class="text-sm font-medium text-slate-700">標題</span>
-        <input bind:value={title} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" />
+        <span class="text-sm font-medium text-slate-700">孩子檔案 ID</span>
+        <input bind:value={childId} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" />
       </label>
       <label class="block">
-        <span class="text-sm font-medium text-slate-700">描述</span>
-        <textarea bind:value={description} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" rows="4"></textarea>
+        <span class="text-sm font-medium text-slate-700">標題</span>
+        <input bind:value={title} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" />
       </label>
       <label class="block">
         <span class="text-sm font-medium text-slate-700">內容</span>
