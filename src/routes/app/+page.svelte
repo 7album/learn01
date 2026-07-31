@@ -1,9 +1,71 @@
 <script lang="ts">
-  const items = [
-    { title: '第一次閱讀時段', type: '學習筆記', meta: '2026-07-31 · 語文' },
-    { title: '騎腳踏車里程碑', type: '里程碑', meta: '2026-07-30 · 戶外活動' },
-    { title: '平靜收拾習慣', type: '行為', meta: '2026-07-28 · 居家技能' }
-  ];
+  import { onMount } from 'svelte';
+  import { supabase } from '$lib/supabase';
+  import { formatDate } from '$lib/date';
+  import type { EntryRecord } from '$lib/entryTypes';
+
+  let loading = true;
+  let error = '';
+  let items: Array<EntryRecord & { label: string; meta: string }> = [];
+
+  async function loadEntries() {
+    loading = true;
+    error = '';
+
+    const [{ data: milestones, error: milestoneError }, { data: notes, error: noteError }] = await Promise.all([
+      supabase.from('milestones').select('id,title,description,category,occurred_at,created_at,updated_at').order('occurred_at', { ascending: false }),
+      supabase.from('learning_notes').select('id,content,tags,noted_at,created_at').order('noted_at', { ascending: false })
+    ]);
+
+    if (milestoneError || noteError) {
+      error = milestoneError?.message ?? noteError?.message ?? '載入資料失敗';
+      loading = false;
+      return;
+    }
+
+    const combined = [
+      ...(milestones ?? []).map((item) => ({
+        ...item,
+        type: 'milestone' as const,
+        label: item.category || '里程碑',
+        title: item.title,
+        meta: `${formatDate(item.occurred_at)} · ${item.category || '里程碑'}`
+      })),
+      ...(notes ?? []).map((item) => ({
+        ...item,
+        type: 'learning_note' as const,
+        label: '學習筆記',
+        title: item.content || '未命名筆記',
+        meta: `${formatDate(item.noted_at)} · ${(item.tags ?? []).join('、') || '無標籤'}`
+      }))
+    ].sort((left, right) => {
+      const leftDate = new Date(left.occurred_at || left.noted_at || left.created_at || '').getTime();
+      const rightDate = new Date(right.occurred_at || right.noted_at || right.created_at || '').getTime();
+      return rightDate - leftDate;
+    });
+
+    items = combined;
+    loading = false;
+  }
+
+  async function removeEntry(item: EntryRecord) {
+    const confirmDelete = confirm('確定要刪除這筆資料嗎？');
+    if (!confirmDelete) return;
+
+    const table = item.type === 'milestone' ? 'milestones' : 'learning_notes';
+    const { error: deleteError } = await supabase.from(table).delete().eq('id', item.id);
+
+    if (deleteError) {
+      error = deleteError.message;
+      return;
+    }
+
+    await loadEntries();
+  }
+
+  onMount(() => {
+    void loadEntries();
+  });
 </script>
 
 <section class="space-y-8">
@@ -37,17 +99,30 @@
       <a class="rounded-full bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-500" href="/app/notes/new">新增筆記</a>
     </div>
 
-    <div class="mt-6 space-y-3">
-      {#each items as item}
-        <article class="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 p-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">{item.type}</p>
-            <h4 class="mt-1 text-lg font-medium">{item.title}</h4>
-            <p class="mt-1 text-sm text-slate-500">{item.meta}</p>
-          </div>
-          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">開啟</span>
-        </article>
-      {/each}
-    </div>
+    {#if error}
+      <p class="mt-6 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
+    {/if}
+
+    {#if loading}
+      <p class="mt-6 text-sm text-slate-500">載入中…</p>
+    {:else if items.length === 0}
+      <p class="mt-6 rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">尚無資料，先新增第一筆里程碑或筆記吧。</p>
+    {:else}
+      <div class="mt-6 space-y-3">
+        {#each items as item}
+          <article class="flex flex-col gap-4 rounded-2xl border border-slate-200 p-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-500">{item.label}</p>
+              <h4 class="mt-1 text-lg font-medium">{item.title}</h4>
+              <p class="mt-1 text-sm text-slate-500">{item.meta}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a class="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:bg-slate-100" href={item.type === 'milestone' ? `/app/milestones/${item.id}/edit` : `/app/notes/${item.id}/edit`}>編輯</a>
+              <button class="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-700 hover:bg-rose-50" on:click={() => removeEntry(item)}>刪除</button>
+            </div>
+          </article>
+        {/each}
+      </div>
+    {/if}
   </div>
 </section>

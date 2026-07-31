@@ -1,14 +1,45 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { supabase } from '$lib/supabase';
+
   let content = '';
   let tags = '';
   let notedAt = '';
+
+  async function save() {
+    const { data } = await supabase.auth.getUser();
+
+    if (!data.user) {
+      await goto('/login');
+      return;
+    }
+
+    const tagList = tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
+    const { error } = await supabase.from('learning_notes').insert({
+      user_id: data.user.id,
+      content,
+      tags: tagList,
+      noted_at: notedAt || new Date().toISOString()
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await goto('/app');
+  }
 </script>
 
 <section class="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
   <p class="text-sm uppercase tracking-[0.3em] text-slate-500">新增筆記</p>
   <h2 class="mt-2 text-2xl font-semibold">建立學習筆記</h2>
 
-  <form class="mt-6 space-y-4">
+  <form class="mt-6 space-y-4" on:submit|preventDefault={save}>
     <label class="block">
       <span class="text-sm font-medium text-slate-700">內容</span>
       <textarea bind:value={content} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" rows="5" placeholder="發生了什麼、孩子觀察到什麼，或哪裡表現得很好"></textarea>

@@ -1,15 +1,42 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { supabase } from '$lib/supabase';
+
   let title = '';
   let description = '';
   let category = '里程碑';
   let occurredAt = '';
+
+  async function save() {
+    const { data } = await supabase.auth.getUser();
+
+    if (!data.user) {
+      await goto('/login');
+      return;
+    }
+
+    const { error } = await supabase.from('milestones').insert({
+      user_id: data.user.id,
+      title,
+      description,
+      category,
+      occurred_at: occurredAt || new Date().toISOString()
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await goto('/app');
+  }
 </script>
 
 <section class="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
   <p class="text-sm uppercase tracking-[0.3em] text-slate-500">新增里程碑</p>
   <h2 class="mt-2 text-2xl font-semibold">建立里程碑</h2>
 
-  <form class="mt-6 space-y-4">
+  <form class="mt-6 space-y-4" on:submit|preventDefault={save}>
     <label class="block">
       <span class="text-sm font-medium text-slate-700">標題</span>
       <input bind:value={title} class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2" placeholder="學會自己綁鞋帶" />
