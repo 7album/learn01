@@ -92,6 +92,11 @@
   $: heatmapDesktopData = buildHeatmap(visibleItems, 210, 14);
   $: heatmapMobileData = buildHeatmap(visibleItems, 70, 12);
 
+  function readDefaultChildId() {
+    if (typeof localStorage === 'undefined') return '';
+    return localStorage.getItem('default-child-id') || '';
+  }
+
   async function loadChildren() {
     childLoading = true;
     childError = '';
@@ -108,7 +113,11 @@
     }
 
     childOptions = data ?? [];
-    if (!selectedChild || !childOptions.some((child) => child.id === selectedChild)) {
+
+    const storedId = readDefaultChildId();
+    if (storedId && childOptions.some((child) => child.id === storedId)) {
+      selectedChild = storedId;
+    } else if (!selectedChild || !childOptions.some((child) => child.id === selectedChild)) {
       selectedChild = childOptions[0]?.id ?? '';
     }
 
@@ -251,9 +260,27 @@
     await loadEntries();
   }
 
+  function syncFromDefaultChild() {
+    const storedId = readDefaultChildId();
+    if (!storedId || storedId === selectedChild) return;
+    if (!childOptions.some((child) => child.id === storedId)) return;
+
+    setChild(storedId);
+  }
+
   onMount(() => {
-    void loadChildren();
-    void loadEntries();
+    void (async () => {
+      await loadChildren();
+      await loadEntries();
+    })();
+
+    window.addEventListener('default-child-changed', syncFromDefaultChild);
+    window.addEventListener('storage', syncFromDefaultChild);
+
+    return () => {
+      window.removeEventListener('default-child-changed', syncFromDefaultChild);
+      window.removeEventListener('storage', syncFromDefaultChild);
+    };
   });
 </script>
 
